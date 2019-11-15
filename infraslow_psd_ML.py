@@ -77,8 +77,9 @@ def try_algorithms():
 
 
 def main():
-    try_algorithms()
-    perf_dict = ml_tools.compare_models(str_check='PSD')
+    # try_algorithms()
+    compare_dict = ml_tools.compare_models(str_check='PSD')
+    utils.save_xls(compare_dict, './analysis/model_comparison_PSD.xlsx')
 
 
 main()
