@@ -333,15 +333,37 @@ def perm_tests(ML_pipeline, n_iters):
     return perm_dict
 
 
-def compare_models(str_check='PSD'):
+def compare_models(str_check='PSD', output_dir=None):
     analysis_dir = "./analysis"
-    psd_results = [d for d in os.listdir(analysis_dir) if str_check in d]
-    performance_dict = {}
-    for d in psd_results:
-        algorithm = ' '.join(str(d).split('_')[2:])
-        folder = os.path.join(analysis_dir, d)
-        performance_file = os.path.join(folder, 'performance.xlsx')
-        performance_df = pd.read_excel(performance_file, index_col=0)
-        performance_dict[algorithm] = performance_df
+    flist = os.listdir("./analysis")
+    psd_dirs = [d for d in flist if str_check in d and '.xlsx' not in d]
+    algorithms = [' '.join(str(d).split('_')[2:]) for d in psd_dirs]
 
-    return performance_dict
+    temp_dir = os.path.join(analysis_dir, psd_dirs[0])
+    temp_df = pd.read_excel(
+        os.path.join(temp_dir, 'performance.xlsx'), index_col=0)
+    performance_measures = list(temp_df.index)
+    sessions = list(temp_df)
+
+    compare_dict = {}
+    for m in performance_measures:
+        compare_df = pd.DataFrame(index=algorithms, columns=sessions)
+        avgs = []
+        for i, d in enumerate(psd_dirs):
+            algorithm = algorithms[i]
+            folder = os.path.join(analysis_dir, d)
+            performance_file = os.path.join(folder, 'performance.xlsx')
+            performance_df = pd.read_excel(performance_file, index_col=0)
+            tally = []
+            for s in sessions:
+                val = performance_df.loc[m][s]
+                compare_df.loc[algorithm][s] = val
+                tally.append(val)
+            avgs.append(np.mean(tally))
+        compare_df['Average'] = avgs
+        compare_dict[m] = compare_df
+
+    if output_dir is not None:
+        save_xls(
+            compare_dict, os.path.join(output_dir, 'model_comparison.xlsx'))
+    return compare_dict
