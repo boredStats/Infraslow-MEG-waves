@@ -222,7 +222,7 @@ class ML_pipeline:
         if model == 'SVM':
             reg_model = _make_SVM(kernel=model_kernel)
         elif model == 'ExtraTrees':
-            reg_model = _make_ExtraTrees()
+            reg_model = _make_ExtraTrees(random_state=self.random_state)
 
         if self.reg_grid is not None:
             gridsearch = GridSearchCV(
