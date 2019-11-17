@@ -334,12 +334,12 @@ def perm_tests(ML_pipeline, n_iters):
 
 
 def compare_algorithms(model='PSD', output_dir=None):
-    analysis_dir = "./results"
-    flist = os.listdir("./results")
-    psd_dirs = [d for d in flist if str_check in d and '.xlsx' not in d]
+    results_dir = "./results"
+    flist = os.listdir(results_dir)
+    psd_dirs = [d for d in flist if model in d and '.xlsx' not in d]
     algorithms = [' '.join(str(d).split('_')[2:]) for d in psd_dirs]
 
-    temp_dir = os.path.join(analysis_dir, psd_dirs[0])
+    temp_dir = os.path.join(results_dir, psd_dirs[0])
     temp_df = pd.read_excel(
         os.path.join(temp_dir, 'performance.xlsx'), index_col=0)
     performance_measures = list(temp_df.index)
@@ -351,7 +351,7 @@ def compare_algorithms(model='PSD', output_dir=None):
         avgs = []
         for i, d in enumerate(psd_dirs):
             algorithm = algorithms[i]
-            folder = os.path.join(analysis_dir, d)
+            folder = os.path.join(results_dir, d)
             performance_file = os.path.join(folder, 'performance.xlsx')
             performance_df = pd.read_excel(performance_file, index_col=0)
             tally = []
@@ -369,4 +369,18 @@ def compare_algorithms(model='PSD', output_dir=None):
     return compare_dict
 
 
-def pick_algorithm(model='PSD', criterion='ExplainedVariance'):
+def pick_algorithm(comparison, model='PSD', criterion='ExplainedVariance'):
+    df = comparison[criterion]
+    pick = df['Average']
+    chosen_alg = pick.idxmax()
+
+    results_dir = "./results"
+    flist = os.listdir(results_dir)
+    model_dirs = [d for d in flist if model in d and '.xlsx' not in d]
+    ad = [d for d in model_dirs if chosen_alg in d][-1]
+    alg_dir = os.path.join(results_dir, ad)
+    feat_file = [f for f in os.listdir(alg_dir) if 'features' in f][-1]
+
+    feature_df = pd.read_excel(os.path.join(alg_dir, feat_file), index_col=0)
+    rois_to_return = list(feature_df.index)
+    return rois_to_return

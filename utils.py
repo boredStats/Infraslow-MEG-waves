@@ -4,6 +4,7 @@
 import os
 import csv
 import time
+import h5py
 import datetime
 import numpy as np
 import pandas as pd
@@ -161,7 +162,7 @@ def load_phase_amp_coupling(phase_index=0, amp_index=3, rois=None):
     See freq_bands in ProjectData for more indices.
     """
     data_dir = _get_data_dir()
-    file = join(data_dir, 'MEG_phase_amp_coupling.hdf5')
+    file = os.path.join(data_dir, 'MEG_phase_amp_coupling.hdf5')
 
     meg_subj, sessions = _get_meg_metadata()
     if rois is None:
@@ -179,6 +180,53 @@ def load_phase_amp_coupling(phase_index=0, amp_index=3, rois=None):
             h5_file.close()
         pac_dict[sess] = session_df
     return pac_dict
+
+
+def load_phase_phase_coupling(file=None, rois=None):
+    """Load PPC data."""
+    data_dir = get_data_dir()
+    if file is None:
+        # file = join(data_dir, 'MEG_phase_phase_coupling.hdf5')
+        file = join(data_dir, 'psd_model_connectivity.hdf5')
+
+    meg_subj, sessions = _get_meg_metadata()
+    if rois is None:
+        rois = _get_glasser_rois()
+
+    roi_indices = []
+    for r in rois:
+        roi_indices.append(glasser_rois.index(r))
+    roi_indices = sorted(roi_indices)
+    sorted_roi_names = []
+    for r, roi in enumerate(roi_indices):
+        sorted_roi_names.append(glasser_rois[roi])
+    colnames = []
+    for r1 in sorted_roi_names:
+        for r2 in sorted_roi_names:
+            connection = '%s %s' % (r1, r2)
+            colnames.append(connection)
+
+    session_dict = {}
+    for sess in sessions:
+        connection_array = np.ndarray(shape=(len(meg_subj), len(colnames)))
+        for s, subj in enumerate(meg_subj):
+            f = h5py.File(file, 'r')
+            level = f[sess][subj]['ppc'][...]
+            conn_counter = 0
+            for r1 in range(len(sorted_roi_names)):
+                for r2 in range(len(sorted_roi_names)):
+                    val = level[r1, r2]
+                    connection_array[s, conn_counter] = val
+                    conn_counter += 1
+
+            f.close()
+        connection_df = pd.DataFrame(
+            connection_array,
+            index=meg_subj,
+            columns=colnames)
+        session_dict[sess] = connection_df
+
+    return session_dict
 
 
 def _get_data_dir():
