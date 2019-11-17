@@ -333,9 +333,9 @@ def perm_tests(ML_pipeline, n_iters):
     return perm_dict
 
 
-def compare_models(str_check='PSD', output_dir=None):
-    analysis_dir = "./analysis"
-    flist = os.listdir("./analysis")
+def compare_algorithms(model='PSD', output_dir=None):
+    analysis_dir = "./results"
+    flist = os.listdir("./results")
     psd_dirs = [d for d in flist if str_check in d and '.xlsx' not in d]
     algorithms = [' '.join(str(d).split('_')[2:]) for d in psd_dirs]
 
@@ -367,3 +367,6 @@ def compare_models(str_check='PSD', output_dir=None):
         save_xls(
             compare_dict, os.path.join(output_dir, 'model_comparison.xlsx'))
     return compare_dict
+
+
+def pick_algorithm(model='PSD', criterion='ExplainedVariance'):

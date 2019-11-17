@@ -61,7 +61,7 @@ def try_algorithms():
     kernels = ['linear', 'rbf']  # only applies to SVM
     for m in ml_algorithms:
         if m == 'ExtraTrees':
-            output_dir = "./analysis/infraslow_PSD_%s" % m
+            output_dir = "./results/infraslow_PSD_%s" % m
             if not os.path.isdir(output_dir):
                 os.mkdir(output_dir)
             _infraslow_psd_model(
@@ -69,7 +69,7 @@ def try_algorithms():
 
         elif m == 'SVM':
             for k in kernels:
-                output_dir = "./analysis/infraslow_PSD_%s_%s" % (m, k)
+                output_dir = "./results/infraslow_PSD_%s_%s" % (m, k)
                 if not os.path.isdir(output_dir):
                     os.mkdir(output_dir)
                 _infraslow_psd_model(
@@ -78,7 +78,7 @@ def try_algorithms():
 
 def main():
     # try_algorithms()
-    compare_dict = ml_tools.compare_models(str_check='PSD')
+    compare_dict = ml_tools.compare_algorithms(model='PSD')
     utils.save_xls(compare_dict, './analysis/model_comparison_PSD.xlsx')
 
 
