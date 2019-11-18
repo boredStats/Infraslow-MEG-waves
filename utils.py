@@ -30,6 +30,16 @@ def save_xls(dict_df, path):
     writer.save()
 
 
+def load_xls(path):
+    """Turn a multi-sheet excel file into a dictionary."""
+    xls = pd.ExcelFile(path)
+    sheets = xls.sheet_names
+    output = {}
+    for sheet in sheets:
+        output[sheet] = xls.parse(sheet_name=sheet, index_col=0)
+    return output
+
+
 def create_custom_roi(rois_to_combine, roi_magnitudes, fname=None):
     """Create a custom ROI based on ROI magnitudes.
 
