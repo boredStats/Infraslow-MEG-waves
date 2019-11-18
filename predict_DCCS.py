@@ -32,7 +32,7 @@ def _infraslow_psd_model(
         regression_grid = {
             'C': (.01, 1, 10, 100, 1000),
             "gamma": (1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
-            'degree': (2, 3, 4, 5)
+            # 'degree': (2, 3, 4, 5)
             }
 
     ML_pipe = ml_tools.ML_pipeline(
@@ -73,7 +73,7 @@ def _alpha_psd_model(
         regression_grid = {
             'C': (.01, 1, 10, 100, 1000),
             "gamma": (1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
-            'degree': (2, 3, 4, 5)
+            # 'degree': (2, 3, 4, 5)
             }
 
     ML_pipe = ml_tools.ML_pipeline(
@@ -116,7 +116,7 @@ def _infraslow_pac_model(
         regression_grid = {
             'C': (.01, 1, 10, 100, 1000),
             "gamma": (1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
-            'degree': (2, 3, 4, 5)
+            # 'degree': (2, 3, 4, 5)
             }
 
     ML_pipe = ml_tools.ML_pipeline(
@@ -169,7 +169,7 @@ def _infraslow_ppc_model(
         regression_grid = {
             'C': (.01, 1, 10, 100, 1000),
             "gamma": (1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
-            'degree': (2, 3, 4, 5)
+            # 'degree': (2, 3, 4, 5)
             }
 
     ML_pipe = ml_tools.ML_pipeline(
@@ -197,7 +197,7 @@ def try_algorithms_on_psd():
     seed = 13  # For reproducibility
     print('Running ML with PSD: %s' % utils.ctime())
     ml_algorithms = ['ExtraTrees', 'SVM']
-    kernels = ['linear', 'rbf', 'poly']  # only applies to SVM
+    kernels = ['linear', 'rbf']  # only applies to SVM
     for m in ml_algorithms:
         if m == 'ExtraTrees':
             output_dir = "./results/infraslow_PSD_%s" % m
@@ -231,7 +231,7 @@ def try_algorithms_on_pac(rois=None):
     seed = 13
     print('Running ML with PAC: %s' % utils.ctime())
     ml_algorithms = ['ExtraTrees', 'SVM']
-    kernels = ['linear', 'rbf', 'poly']  # only applies to SVM
+    kernels = ['linear', 'rbf']  # only applies to SVM
     for m in ml_algorithms:
         if m == 'ExtraTrees':
             output_dir = "./results/infraslow_PAC_%s" % m
@@ -253,7 +253,7 @@ def try_algorithms_on_ppc(rois=None):
     seed = 13
     print('Running ML with PPC: %s' % utils.ctime())
     ml_algorithms = ['ExtraTrees', 'SVM']
-    kernels = ['linear', 'rbf', 'poly']  # only applies to SVM
+    kernels = ['linear', 'rbf']  # only applies to SVM
     for m in ml_algorithms:
         if m == 'ExtraTrees':
             output_dir = "./results/infraslow_PPC_%s" % m
@@ -278,7 +278,7 @@ def try_algorithms_on_ppc(rois=None):
 
 
 def main():
-    # try_algorithms_on_psd()
+    try_algorithms_on_psd()
     compare_dict = ml_tools.compare_algorithms(band='infraslow')
     utils.save_xls(
         compare_dict, './results/infraslow_PSD_model_comparison.xlsx')
@@ -287,12 +287,12 @@ def main():
         compare_dict, './results/alpha_PSD_model_comparison.xlsx')
     psd_rois = ml_tools.pick_algorithm(compare_dict)
 
-    # try_algorithms_on_pac(rois=psd_rois)
+    try_algorithms_on_pac(rois=psd_rois)
     compare_dict = ml_tools.compare_algorithms(model='PAC')
     utils.save_xls(
         compare_dict, './results/infraslow_PAC_model_comparison.xlsx')
 
-    # try_algorithms_on_ppc(rois=psd_rois)
+    try_algorithms_on_ppc(rois=psd_rois)
     compare_dict = ml_tools.compare_algorithms(band='infraslow', model='PPC')
     utils.save_xls(
         compare_dict, './results/infraslow_PPC_model_comparison.xlsx')
