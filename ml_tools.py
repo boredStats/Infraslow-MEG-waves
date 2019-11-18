@@ -48,6 +48,14 @@ def _stack_session_data(session_dict, return_df=False):
         return stacked_data
 
 
+def _unstack_session_data(array, sessions, n=87):
+    split_arrays = np.split(array, len(sessions))
+    unstacked = {}
+    for s, data in enumerate(split_arrays):
+        unstacked[sessions[s]] = pd.DataFrame(data)
+    return unstacked
+
+
 def _performance_battery(y_test, prediction, progress=False, debug=False):
     """Calculate MSE, MAE and r2 on fold result."""
     mse = metrics.mean_squared_error(y_test, prediction)
@@ -91,6 +99,24 @@ def add_conjunction(feature_df, conjunction_test='all'):
     return output, sorted_conj_df
 
 
+def plsc(x, y, sessions=None):
+    if not sessions:
+        sessions = meg_sessions
+
+    if type(x) == dict:
+        x_ = ml_tools._stack_session_data(x)
+    else:
+        x_ = x.values
+    y.tolist()
+    y_ = []
+    for s in range(len(sessions)):
+        y_.extend(y)
+
+    est = PLSSVD()
+    lv, _ = est.fit_transform(x_, np.asarray(y_))
+    return lv
+
+
 class ML_pipeline:
     """Machine learning pipeline for this project."""
 
@@ -106,7 +132,12 @@ class ML_pipeline:
             random_state=None,
             debug=False):
         """Initialize pipeline with data and targets."""
-        self.X = _stack_session_data(predictors)
+        if type(predictors) == dict:
+            self.X = _stack_session_data(predictors)
+        elif type(predictors) == pd.DataFrame:
+            self.X = predictors.values
+        else:
+            self.X = predictors
 
         ylist = []
         try:
@@ -333,13 +364,14 @@ def perm_tests(ML_pipeline, n_iters):
     return perm_dict
 
 
-def compare_algorithms(model='PSD', output_dir=None):
+def compare_algorithms(band='infraslow', model='PSD'):
     results_dir = "./results"
     flist = os.listdir(results_dir)
     psd_dirs = [d for d in flist if model in d and '.xlsx' not in d]
-    algorithms = [' '.join(str(d).split('_')[2:]) for d in psd_dirs]
+    band_dirs = [d for d in psd_dirs if band in d]
+    algorithms = [' '.join(str(d).split('_')[2:]) for d in band_dirs]
 
-    temp_dir = os.path.join(results_dir, psd_dirs[0])
+    temp_dir = os.path.join(results_dir, band_dirs[0])
     temp_df = pd.read_excel(
         os.path.join(temp_dir, 'performance.xlsx'), index_col=0)
     performance_measures = list(temp_df.index)
@@ -349,7 +381,7 @@ def compare_algorithms(model='PSD', output_dir=None):
     for m in performance_measures:
         compare_df = pd.DataFrame(index=algorithms, columns=sessions)
         avgs = []
-        for i, d in enumerate(psd_dirs):
+        for i, d in enumerate(band_dirs):
             algorithm = algorithms[i]
             folder = os.path.join(results_dir, d)
             performance_file = os.path.join(folder, 'performance.xlsx')
@@ -363,9 +395,6 @@ def compare_algorithms(model='PSD', output_dir=None):
         compare_df['Average'] = avgs
         compare_dict[m] = compare_df
 
-    if output_dir is not None:
-        save_xls(
-            compare_dict, os.path.join(output_dir, 'model_comparison.xlsx'))
     return compare_dict
 
 

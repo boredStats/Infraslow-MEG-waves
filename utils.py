@@ -132,6 +132,17 @@ def load_behavior(behavior='CardSort_Unadj'):
             print('Behavior variable: %s was not found' % behavior)
 
 
+def load_alpha_psd():
+    data_dir = _get_data_dir()
+    _, meg_sess = _get_meg_metadata()
+    alpha_file = os.path.join(data_dir, 'MEG_alpha_power.xlsx')
+    alpha_data = {}
+    for sess in meg_sess:
+        df = pd.read_excel(alpha_file, index_col=0, sheet_name=sess)
+        alpha_data[sess] = df
+    return alpha_data
+
+
 def load_infraslow_psd(seperate_sessions=True):
     """Load pre-calculated infraslow PSD (.01 - .1 Hz bandpass)."""
     data_dir = _get_data_dir()
@@ -184,14 +195,15 @@ def load_phase_amp_coupling(phase_index=0, amp_index=3, rois=None):
 
 def load_phase_phase_coupling(file=None, rois=None):
     """Load PPC data."""
-    data_dir = get_data_dir()
+    data_dir = _get_data_dir()
     if file is None:
-        # file = join(data_dir, 'MEG_phase_phase_coupling.hdf5')
-        file = join(data_dir, 'psd_model_connectivity.hdf5')
+        # file = os.path.join(data_dir, 'MEG_phase_phase_coupling.hdf5')
+        file = os.path.join(data_dir, 'psd_model_connectivity.hdf5')
 
     meg_subj, sessions = _get_meg_metadata()
     if rois is None:
         rois = _get_glasser_rois()
+    glasser_rois = _get_glasser_rois()
 
     roi_indices = []
     for r in rois:
