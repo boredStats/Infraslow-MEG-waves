@@ -279,13 +279,15 @@ def try_algorithms_on_ppc(rois=None):
 
 def main():
     try_algorithms_on_psd()
-    compare_dict = ml_tools.compare_algorithms(band='infraslow')
+    infraslow_compare_dict = ml_tools.compare_algorithms(band='infraslow')
     utils.save_xls(
-        compare_dict, './results/infraslow_PSD_model_comparison.xlsx')
-    compare_dict = ml_tools.compare_algorithms(band='alpha')
+        infraslow_compare_dict,
+        './results/infraslow_PSD_model_comparison.xlsx')
+    alpha_compare_dict = ml_tools.compare_algorithms(band='alpha')
     utils.save_xls(
-        compare_dict, './results/alpha_PSD_model_comparison.xlsx')
-    psd_rois = ml_tools.pick_algorithm(compare_dict)
+        alpha_compare_dict,
+        './results/alpha_PSD_model_comparison.xlsx')
+    psd_rois = ml_tools.pick_algorithm(infraslow_compare_dict)
 
     try_algorithms_on_pac(rois=psd_rois)
     compare_dict = ml_tools.compare_algorithms(model='PAC')
