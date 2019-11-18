@@ -412,4 +412,4 @@ def pick_algorithm(comparison, model='PSD', criterion='ExplainedVariance'):
 
     feature_df = pd.read_excel(os.path.join(alg_dir, feat_file), index_col=0)
     rois_to_return = list(feature_df.index)
-    return rois_to_return
+    return rois_to_return, chosen_alg
