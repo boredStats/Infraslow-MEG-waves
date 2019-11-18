@@ -104,7 +104,7 @@ def plsc(x, y, sessions=None):
         _, sessions = _get_meg_metadata()
 
     if type(x) == dict:
-        x_ = ml_tools._stack_session_data(x)
+        x_ = _stack_session_data(x)
     else:
         x_ = x.values
     y.tolist()
