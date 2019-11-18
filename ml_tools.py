@@ -4,7 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
-from utils import ctime, save_xls
+from utils import ctime, save_xls, _get_meg_metadata
 from copy import deepcopy
 from sklearn import ensemble, svm, metrics
 from sklearn.utils import resample
@@ -101,7 +101,7 @@ def add_conjunction(feature_df, conjunction_test='all'):
 
 def plsc(x, y, sessions=None):
     if not sessions:
-        sessions = meg_sessions
+        _, sessions = _get_meg_metadata()
 
     if type(x) == dict:
         x_ = ml_tools._stack_session_data(x)
