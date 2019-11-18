@@ -287,7 +287,7 @@ def main():
     utils.save_xls(
         alpha_compare_dict,
         './results/alpha_PSD_model_comparison.xlsx')
-    psd_rois = ml_tools.pick_algorithm(infraslow_compare_dict)
+    psd_rois, _ = ml_tools.pick_algorithm(infraslow_compare_dict)
 
     try_algorithms_on_pac(rois=psd_rois)
     compare_dict = ml_tools.compare_algorithms(model='PAC')
