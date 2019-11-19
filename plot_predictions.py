@@ -1,22 +1,14 @@
 """Plot predictions on lineplots."""
 
+import os
+import sys
+import utils
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib as mpl
-import proj_utils as pu
 import matplotlib.pyplot as plt
-from math import hypot, sqrt
-from os.path import join, abspath
-from sympy import symbols, Eq, solve
 from matplotlib.offsetbox import AnchoredText
-
-output_dir = abspath('./../results/card_sort_regression')
-
-proj_data = pu.ProjectData()
-all_rois = proj_data.glasser_rois()
-_, sessions = proj_data.meg_metadata()
-session_plotnames = ['Session 1', 'Session 2', 'Session 3']
 
 
 def create_coord_tuples(x, y):
@@ -184,62 +176,38 @@ def nice_perf_df(perf_file, p_values):
     return nice_df
 
 
-def plot_psd(output_dir, m='ExtraTreesRegressor'):
-    psd_pred = join(output_dir, 'PSD_%s_predictions.xlsx' % m)
-    psd_perf = join(output_dir, 'PSD_%s_performance.xlsx' % m)
-    psd_perm = join(output_dir, 'PSD_perm_tests.xlsx')
+def _find_result(model, band, alg, kernel):
+    results_dir = os.path.abspath('./results')
+    contents = [os.path.join(results_dir, d) for d in os.listdir(results_dir)]
+    dirlist = [d for d in contents if os.path.isdir(d)]
+    model_dirs = [d for d in dirlist if model in d]
+    band_dirs = [d for d in model_dirs if band in d]
+    alg_dirs = [d for d in band_dirs if alg in d]
+    if kernel is not None:
+        res_dir = [d for d in alg_dirs if kernel in d][-1]
+    else:
+        res_dir = alg_dirs[-1]
+    full_res = os.path.join(results_dir, res_dir)
+    return full_res
 
+
+def plotpred(model='PSD', band='infraslow', alg='ExtraTrees', kernel=None):
+    _, sessions = utils.ProjectData.meg_metadata
+    results_dir = os.path.abspath('./results')
+    chosen_dir = _find_result(model, band, alg, kernel)
+    print(chosen_dir)
+    predictions = os.path.join(chosen_dir, 'predictions.xlsx')
+    performance = os.path.join(chosen_dir, 'performance.xlsx')
+    perm_tests = os.path.join(chosen_dir, 'perm_tests.xlsx')
     fig, p = create_prediction_subplots(
-        psd_pred, psd_perf,
-        permfile=psd_perm,
-        # subplot_titles=['A1)', 'A2)', 'A3)'],
-        subplot_titles=session_plotnames
-        )
-    fname = join(output_dir, 'PSD_%s_predictions.png' % m)
-    fig.savefig(fname, bbox_inches='tight', dpi=300)
-
-    nice_df = nice_perf_df(psd_perf, p)
-    nice_df.to_excel(join(output_dir, 'PSD_%s_performance_cleaned.xlsx' % m))
-    plt.close()
-
-
-def plot_pac(m='SVR'):
-    pac_pred = join(output_dir, 'PAC_%s_predictions.xlsx' % m)
-    pac_perf = join(output_dir, 'PAC_%s_performance.xlsx' % m)
-    pac_perm = join(output_dir, 'PAC_perm_tests.xlsx')
-    fig, p = create_prediction_subplots(
-        pac_pred, pac_perf,
-        permfile=pac_perm,
-        # subplot_titles=['B1)', 'B2)', 'B3)'],
-        subplot_titles=session_plotnames)
-    fname = join(output_dir, 'PAC_%s_predictions.png' % m)
-    fig.savefig(fname, bbox_inches='tight', dpi=300)
-
-    nice_df = nice_perf_df(pac_perf, p)
-    nice_df.to_excel(join(output_dir, 'PAC_%s_performance_cleaned.xlsx' % m))
-    plt.close()
-
-
-def plot_ppc(m='SVR'):
-    ppc_pred = join(output_dir, 'PPC_%s_predictions.xlsx' % m)
-    ppc_perf = join(output_dir, 'PPC_%s_performance.xlsx' % m)
-    ppc_perm = join(output_dir, 'PPC_perm_tests.xlsx')
-    fig, p = create_prediction_subplots(
-        ppc_pred, ppc_perf,
-        permfile=ppc_perm,
-        # subplot_titles=['C1)', 'C2)', 'C3)'],
-        subplot_titles=session_plotnames
-        )
-    fname = join(output_dir, 'PPC_%s_predictions.png' % m)
-    fig.savefig(fname, bbox_inches='tight', dpi=300)
-
-    nice_df = nice_perf_df(ppc_perf, p)
-    nice_df.to_excel(join(output_dir, 'PPC_%s_performance_cleaned.xlsx' % m))
+        predictions=predictions,
+        performance=performance,
+        permfile=perm_tests,
+        subplot_titles=sessions)
+    outfig = os.path.join(chosen_dir, 'predictions.png')
+    fig.savefig(outfig, bbox_inches='tight', dpi=300)
     plt.close()
 
 
 if __name__ == "__main__":
-    calculate_parallel()
-    plot_psd()
-    plot_pac()
-    plot_ppc()
+    plotpred(*sys.argv[1:])
