@@ -4,7 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
-from utils import ctime, save_xls, _get_meg_metadata
+from utils import ctime, save_xls, _get_meg_metadata, find_result
 from copy import deepcopy
 from sklearn import ensemble, svm, metrics
 from sklearn.utils import resample
@@ -125,7 +125,11 @@ class ML_pipeline:
             predictors,
             targets,
             run_PLSC=False,
+            feature_selection='SVM',
+            feature_selection_kernel='linear',
             feature_selection_gridsearch=None,
+            model='ExtraTrees',
+            model_kernel='linear',
             model_gridsearch=None,
             feature_names=None,
             session_names=None,  # session names or n_sessions
@@ -150,6 +154,10 @@ class ML_pipeline:
         self.y = pd.concat(ylist, axis=0, ignore_index=True).values
 
         self.pls_check = run_PLSC
+        self.regression_model = model
+        self.regression_kernel = model_kernel
+        self.fs_estimator = feature_selection
+        self.fs_kernel = feature_selection_kernel
         self.fs_grid = feature_selection_gridsearch
         self.reg_grid = model_gridsearch
 
@@ -207,13 +215,7 @@ class ML_pipeline:
 
         return predicted, estimator
 
-    def run_predictions(
-            self,
-            permute=False,
-            feature_selection='SVM',
-            feature_selection_kernel='linear',
-            model='ExtraTrees',
-            model_kernel='linear'):
+    def run_predictions(self, permute=False,):
         """Core machine learning pipeline."""
         if type(permute) == int:
             self.X = resample(self.X)
@@ -228,9 +230,9 @@ class ML_pipeline:
         ps = PredefinedSplit(test_fold)
 
         # Feature selection setup
-        if feature_selection == 'SVM':
-            fs_model = _make_SVM(kernel=feature_selection_kernel)
-        elif feature_selection == 'ExtraTrees':
+        if self.fs_estimator == 'SVM':
+            fs_model = _make_SVM(kernel=self.fs_kernel)
+        elif self.fs_estimator == 'ExtraTrees':
             if self.perm_check is True:
                 seed = None
             else:
@@ -250,9 +252,9 @@ class ML_pipeline:
             self.feature_selection_gridsearch_results = grid_df
 
         # Regression model setup
-        if model == 'SVM':
-            reg_model = _make_SVM(kernel=model_kernel)
-        elif model == 'ExtraTrees':
+        if self.regression_model == 'SVM':
+            reg_model = _make_SVM(kernel=self.regression_kernel )
+        elif self.regression_model == 'ExtraTrees':
             reg_model = _make_ExtraTrees(random_state=self.random_state)
 
         if self.reg_grid is not None:
@@ -398,18 +400,27 @@ def compare_algorithms(band='infraslow', model='PSD'):
     return compare_dict
 
 
-def pick_algorithm(comparison, model='PSD', criterion='ExplainedVariance'):
+def pick_algorithm(
+        comparison,
+        band='infraslow',
+        model='PSD',
+        criterion='ExplainedVariance',
+        return_directory=False):
     df = comparison[criterion]
     pick = df['Average']
     chosen_alg = pick.idxmax()
+    str_check = str(chosen_alg).split(' ')
+    if len(str_check) > 1:
+        alg, kernel = str_check[0], str_check[1]
+    else:
+        alg, kernel = chosen_alg, None
 
-    results_dir = "./results"
-    flist = os.listdir(results_dir)
-    model_dirs = [d for d in flist if model in d and '.xlsx' not in d]
-    ad = [d for d in model_dirs if chosen_alg in d][-1]
-    alg_dir = os.path.join(results_dir, ad)
+    alg_dir = find_result(model, band, alg, kernel)
     feat_file = [f for f in os.listdir(alg_dir) if 'features' in f][-1]
 
     feature_df = pd.read_excel(os.path.join(alg_dir, feat_file), index_col=0)
     rois_to_return = list(feature_df.index)
-    return rois_to_return, chosen_alg
+    if return_directory:
+        return rois_to_return, chosen_alg, alg_dir
+    else:
+        return rois_to_return, chosen_alg
