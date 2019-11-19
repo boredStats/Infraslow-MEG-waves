@@ -203,13 +203,13 @@ def load_phase_amp_coupling(phase_index=0, amp_index=3, rois=None):
     return pac_dict
 
 
-def load_phase_phase_coupling(file=None, rois=None):
+def load_phase_phase_coupling(band='BOLD bandpass', rois=None):
     """Load PPC data."""
     data_dir = _get_data_dir()
-    if file is None:
-        # file = os.path.join(data_dir, 'MEG_phase_phase_coupling.hdf5')
-        file = os.path.join(data_dir, 'psd_model_connectivity.hdf5')
-
+    if band == 'BOLD bandpass':
+        file = os.path.join(data_dir, 'MEG_infraslow_ppc.hdf5')
+    elif band == 'Alpha':
+        file = os.path.join(data_dir, 'MEG_alpha_ppc.hdf5')
     meg_subj, sessions = _get_meg_metadata()
     if rois is None:
         rois = _get_glasser_rois()
