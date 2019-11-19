@@ -12,7 +12,7 @@ def get_psd_rois():
     return psd_rois, algorithm
 
 
-def _pretty_pac(algorithm, rois=None):
+def _pretty_pac(algorithm=None, rois=None):
     if not rois:
         rois = utils.ProjectData.glasser_rois
     pac = utils.load_phase_amp_coupling(rois=rois)
@@ -22,7 +22,7 @@ def _pretty_pac(algorithm, rois=None):
     utils.save_xls(pac, os.path.join(manuscript_dir, fname))
 
 
-def _pretty_ppc(algorithm, rois=None):
+def _pretty_infraslow_ppc(algorithm=None, rois=None):
     if not rois:
         rois = utils.ProjectData.glasser_rois
     ppc = utils.load_phase_phase_coupling(rois=rois)
@@ -32,10 +32,19 @@ def _pretty_ppc(algorithm, rois=None):
     utils.save_xls(ppc, os.path.join(manuscript_dir, fname))
 
 
-def main():
+def _pretty_alpha_ppc(algorithm=None, rois=None):
+    if not rois:
+        rois = utils.ProjectData.glasser_rois
+    data_dir = utils.ProjectData.data_dir
+    ppc = utils.load_phase_phase_coupling(band='Alpha', rois=rois)
+
+    manuscript_dir = './manuscript'
+    fname = 'alpha_phase_phase_connectivity.xlsx'
+    utils.save_xls(ppc, os.path.join(manuscript_dir, fname))
+
+
+if __name__ == "__main__":
     psd_rois, algorithm = get_psd_rois()
-    _pretty_pac(algorithm, rois=psd_rois)
-    _pretty_ppc(algorithm, rois=psd_rois)
-
-
-main()
+    _pretty_pac(rois=psd_rois)
+    _pretty_infraslow_ppc(rois=psd_rois)
+    _pretty_alpha_ppc(rois=psd_rois)
