@@ -9,6 +9,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import pickle as pkl
+from copy import deepcopy
 
 
 def ctime():
@@ -47,8 +48,8 @@ def create_custom_roi(rois_to_combine, roi_magnitudes, fname=None):
     a single nifti file.
     """
     from nibabel import load, save, Nifti1Image
-    data_dir = get_data_dir()
-    roi_path = join(data_dir, 'glasser_atlas')
+    data_dir = _get_data_dir()
+    roi_path = os.path.join(data_dir, 'glasser_atlas')
 
     def _stack_3d_dynamic(template, roi_indices, mag):
         t_copy = deepcopy(template)
@@ -60,14 +61,14 @@ def create_custom_roi(rois_to_combine, roi_magnitudes, fname=None):
         return t_copy
 
     rn = '%s.nii.gz' % rois_to_combine[0]
-    t_vol = load(join(roi_path, rn))
+    t_vol = load(os.path.join(roi_path, rn))
     temp = t_vol.get_data()
     temp[temp > 0] = 0
     for r, roi in enumerate(rois_to_combine):
         if roi_magnitudes[r] == 0:
             pass
         rn = '%s.nii.gz' % roi
-        volume_data = load(join(roi_path, rn)).get_data()
+        volume_data = load(os.path.join(roi_path, rn)).get_data()
         r_idx = np.where(volume_data > 0)
         temp = _stack_3d_dynamic(temp, r_idx, roi_magnitudes[r])
 
