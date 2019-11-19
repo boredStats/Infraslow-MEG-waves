@@ -176,25 +176,10 @@ def nice_perf_df(perf_file, p_values):
     return nice_df
 
 
-def _find_result(model, band, alg, kernel):
-    results_dir = os.path.abspath('./results')
-    contents = [os.path.join(results_dir, d) for d in os.listdir(results_dir)]
-    dirlist = [d for d in contents if os.path.isdir(d)]
-    model_dirs = [d for d in dirlist if model in d]
-    band_dirs = [d for d in model_dirs if band in d]
-    alg_dirs = [d for d in band_dirs if alg in d]
-    if kernel is not None:
-        res_dir = [d for d in alg_dirs if kernel in d][-1]
-    else:
-        res_dir = alg_dirs[-1]
-    full_res = os.path.join(results_dir, res_dir)
-    return full_res
-
-
 def plotpred(model='PSD', band='infraslow', alg='ExtraTrees', kernel=None):
     _, sessions = utils.ProjectData.meg_metadata
     results_dir = os.path.abspath('./results')
-    chosen_dir = _find_result(model, band, alg, kernel)
+    chosen_dir = utils.find_result(model, band, alg, kernel)
     print(chosen_dir)
     predictions = os.path.join(chosen_dir, 'predictions.xlsx')
     performance = os.path.join(chosen_dir, 'performance.xlsx')
