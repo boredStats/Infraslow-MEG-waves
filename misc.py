@@ -3,6 +3,8 @@
 import os
 import utils
 import ml_tools
+import numpy as np
+import pandas as pd
 
 
 def get_psd_rois():
@@ -43,8 +45,27 @@ def _pretty_alpha_ppc(algorithm=None, rois=None):
     utils.save_xls(ppc, os.path.join(manuscript_dir, fname))
 
 
+def _plot_brain(model='PSD', band='infraslow', alg='ExtraTrees', kernel=None):
+    # Only works with ExtraTrees results
+    results_dir = os.path.abspath('./results')
+    feature_dir = utils.find_result(model, band, alg, kernel)
+    feature_file = os.path.join(feature_dir, 'features.xlsx')
+    feature_df = pd.read_excel(feature_file, index_col=0)
+    rois = list(feature_df.index)
+
+    importances = feature_df['Average Importance'].values
+    brain_file = os.path.join(feature_dir, 'brain.nii.gz')
+    brain = utils.create_custom_roi(rois, importances, brain_file)
+
+    cmap = 'jet'
+    figpath = os.path.join(feature_dir, 'brain.png')
+    v = np.max(importances)
+    utils.plot_brains(brain, maxval=v, cbar=True, cmap=cmap, figpath=figpath)
+
+
 if __name__ == "__main__":
-    psd_rois, algorithm = get_psd_rois()
-    _pretty_pac(rois=psd_rois)
-    _pretty_infraslow_ppc(rois=psd_rois)
-    _pretty_alpha_ppc(rois=psd_rois)
+    # psd_rois, algorithm = get_psd_rois()
+    # _pretty_pac(rois=psd_rois)
+    # _pretty_infraslow_ppc(rois=psd_rois)
+    # _pretty_alpha_ppc(rois=psd_rois)
+    _plot_brain(band='alpha')
