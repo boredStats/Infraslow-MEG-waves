@@ -192,6 +192,7 @@ def _infraslow_ppc_model(
         utils.save_xls(
             perm_dict, os.path.join(output_dir, 'permutation_tests.xlsx'))
 
+
 def _alpha_ppc_model(
         alg, kernel, permute=False, seed=None, output_dir=None, rois=None):
     """Predict DCCS using infraslow PPC."""
@@ -228,18 +229,21 @@ def _alpha_ppc_model(
         predictors=latent_vars,
         targets=card_sort_task_data,
         feature_selection_gridsearch=feature_selection_grid,
+        model=alg,
+        model_kernel=kernel,
         model_gridsearch=regression_grid,
         feature_names=glasser_rois,
         session_names=meg_sessions,
         random_state=seed,
         debug=True)
 
-    ML_pipe.run_predictions(model=alg, model_kernel=kernel)
     if not permute:
+        ML_pipe.run_predictions()
         ml_tools.save_outputs(ML_pipe, output_dir)
     else:
         ML_pipe.debug = False
         perm_dict = ml_tools.perm_tests(ML_pipe, n_iters=permute)
+        print(perm_dict)
         utils.save_xls(
             perm_dict, os.path.join(output_dir, 'permutation_tests.xlsx'))
 
@@ -345,7 +349,7 @@ def try_algorithms_on_ppc(rois=None):
                     rois=rois)
 
 
-def main():
+if __name__ == "__main__":
     # try_algorithms_on_psd()
     # infraslow_compare_dict = ml_tools.compare_algorithms(band='infraslow')
     # utils.save_xls(
@@ -361,16 +365,29 @@ def main():
     # compare_dict = ml_tools.compare_algorithms(model='PAC')
     # utils.save_xls(
     #     compare_dict, './results/infraslow_PAC_model_comparison.xlsx')
+
     from misc import get_psd_rois
     psd_rois, _ = get_psd_rois()
-    try_algorithms_on_ppc(rois=psd_rois)
-    compare_dict = ml_tools.compare_algorithms(band='infraslow', model='PPC')
-    utils.save_xls(
-        compare_dict, './results/infraslow_PPC_model_comparison.xlsx')
+
+    # try_algorithms_on_ppc(rois=psd_rois)
+    # compare_dict = ml_tools.compare_algorithms(band='infraslow', model='PPC')
+    # utils.save_xls(
+    #     compare_dict, './results/infraslow_PPC_model_comparison.xlsx')
+
     compare_dict = ml_tools.compare_algorithms(band='alpha', model='PPC')
     utils.save_xls(
         compare_dict, './results/alpha_PPC_model_comparison.xlsx')
-
-
-
-main()
+    _, algorithm, dir = ml_tools.pick_algorithm(
+        compare_dict, band='alpha', model='PPC', return_directory=True)
+    str_check = algorithm.split(' ')
+    if len(str_check) > 1:
+        alg, kernel = str_check[0], str_check[1]
+    else:
+        alg, kernel = algorithm, None
+    _alpha_ppc_model(
+        alg=alg,
+        kernel=kernel,
+        permute=1000,
+        seed=13,
+        output_dir=dir,
+        rois=psd_rois)
