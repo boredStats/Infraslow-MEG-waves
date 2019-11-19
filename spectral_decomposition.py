@@ -137,7 +137,7 @@ def _circ_line_corr(ang, line):
     n = len(ang)
     rxs = pearsonr(line, np.sin(ang))
     rxs = rxs[0]
-    rxc = pearsonr(line np.cos(ang))
+    rxc = pearsonr(line, np.cos(ang))
     rxc = rxc[0]
     rcs = pearsonr(np.sin(ang), np.cos(ang))
     rcs = rcs[0]
@@ -206,12 +206,14 @@ def sort_roi_names(rois):
     """
     glasser_rois = utils.ProjectData.glasser_rois
     roi_indices = []
-    for r in rois:
-        roi_indices.append(glasser_rois.index(r))
+    for roi in rois:
+        true_index = glasser_rois.index(roi)
+        roi_indices.append(true_index)
     sorted_indices = sorted(roi_indices)
     sorted_roi_names = []
-    for r, roi in enumerate(roi_indices):
-        sorted_roi_names.append(glasser_rois[roi])
+    for si in sorted_indices:
+        ordered_name = glasser_rois[si]
+        sorted_roi_names.append(ordered_name)
 
     return sorted_indices, sorted_roi_names
 
@@ -220,7 +222,7 @@ def _calc_ppc(band, output_file=None, rois=None):
     ProjectData = utils.ProjectData
     data_dir = ProjectData.data_dir
 
-    meg_subj, meg_sess = ProjectData.meg_metadata
+    subjects, sessions = ProjectData.meg_metadata
 
     phase_amp_data = os.path.join(data_dir, 'MEG_phase_amp_data.hdf5')
     if output_file is None:
@@ -241,7 +243,7 @@ def _calc_ppc(band, output_file=None, rois=None):
 
             data_file = h5py.File(phase_amp_data, 'r+')
             band_key = '%s/phase_data' % band
-            subj_data = copy(data_file[subj][sess][band_key][:, roi_indices])
+            subj_data = data_file[subj][sess][band_key][:, roi_indices]
 
             ppc = np.ndarray(shape=(len(rois), len(rois)))
             for r1, roi1 in enumerate(roi_indices):
@@ -261,3 +263,24 @@ def _calc_ppc(band, output_file=None, rois=None):
             ppc_file.close()
             data_file.close()
             del subj_data
+
+
+def _calc_alpha_ppc():
+    from misc import get_psd_rois
+    psd_rois, _ = get_psd_rois()
+    data_dir = utils.ProjectData.data_dir
+    alpha_ppc = os.path.join(data_dir, 'MEG_alpha_ppc.hdf5')
+    _calc_ppc(band='Alpha', rois=psd_rois, output_file=alpha_ppc)
+
+
+def _calc_infraslow_ppc():
+    from misc import get_psd_rois
+    psd_rois, _ = get_psd_rois()
+    data_dir = utils.ProjectData.data_dir
+    alpha_ppc = os.path.join(data_dir, 'MEG_infraslow_ppc.hdf5')
+    _calc_ppc(band='BOLD bandpass', rois=psd_rois, output_file=alpha_ppc)
+
+
+if __name__ == "__main__":
+    # _calc_alpha_ppc()
+    _calc_infraslow_ppc()
