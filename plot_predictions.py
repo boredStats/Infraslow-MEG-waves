@@ -164,18 +164,6 @@ def create_prediction_subplots(
     return fig, p_values
 
 
-def nice_perf_df(perf_file, p_values):
-    performance_df = pd.read_excel(perf_file, index_col=0)
-    rmse = np.sqrt(performance_df.loc['MSE'].values)
-    r2 = performance_df.loc['ExplainedVariance'].values
-    nice_df = pd.DataFrame(columns=list(performance_df))
-    nice_df.loc['RMSE'] = rmse
-    nice_df.loc['ExplainedVariance'] = r2
-    nice_df.loc['p_values'] = p_values
-
-    return nice_df
-
-
 def plotpred(model='PSD', band='infraslow', alg='ExtraTrees', kernel=None):
     _, sessions = utils.ProjectData.meg_metadata
     results_dir = os.path.abspath('./results')

@@ -267,6 +267,69 @@ def find_result(model, band, alg, kernel):
     return full_res
 
 
+def nice_perf_df_v1(result_directory):
+    # v1 of this function
+    _, sessions = ProjectData.meg_metadata
+    perm_file = os.path.join(result_directory, 'permutation_tests.xlsx')
+    if not os.path.exists(perm_file):
+        raise FileNotFoundError("Permutation test file not found")
+
+    perf_file = os.path.join(result_directory, 'performance.xlsx')
+    perf_df = pd.read_excel(perf_file, index_col=0)
+
+    rmse = np.sqrt(perf_df.loc['MSE'].values)
+    r2 = perf_df.loc['ExplainedVariance'].values
+    perm_r2 = pd.read_excel(
+        perm_file, index_col=0, sheet_name='ExplainedVariance')
+    p_values = []
+    for sess in sessions:
+        obs = perf_df.loc['ExplainedVariance'][sess]
+        perms = perm_r2[sess].values
+        p_values.append(permutation_p(obs, perms))
+
+    nice_df = pd.DataFrame(columns=sessions)
+    nice_df.loc['RMSE'] = rmse
+    nice_df.loc['ExplainedVariance'] = r2
+    nice_df.loc['p_values'] = p_values
+
+    return nice_df
+
+
+def nice_perf_df_v2(result_directory):
+    # v2 of this function to return all performance measures
+    _, sessions = ProjectData.meg_metadata
+    perm_file = os.path.join(result_directory, 'permutation_tests.xlsx')
+    if not os.path.exists(perm_file):
+        raise FileNotFoundError("Permutation test file not found")
+
+    perf_file = os.path.join(result_directory, 'performance.xlsx')
+    perf_df = pd.read_excel(perf_file, index_col=0)
+
+    nice_dict = {}
+    for perf in ['MSE', 'ExplainedVariance', 'MAE']:
+        nice_df = pd.DataFrame(columns=sessions)
+        perm_df = pd.read_excel(perm_file, index_col=0, sheet_name=perf)
+        for sess in sessions:
+            observed = perf_df.loc[perf][sess]
+            perms = perm_df[sess].values
+            p_val = permutation_p(observed, perms)
+            nice_df.loc['Observed value'][sess] = observed
+            nice_df.loc['pval'][sess] = p_val
+        nice_dict[perf] = nice_df
+
+    return nice_dict
+
+
+def permutation_p(observed, perm_array):
+    """Non-parametric null hypothesis testing.
+
+    see Phipson & Smyth 2010 for more information
+    """
+    n_iters = len(perm_array)
+    n_hits = np.where(np.abs(perm_array) >= np.abs(observed))
+    return (len(n_hits[0]) + 1) / (n_iters + 1)
+
+
 def _get_data_dir():
     cdir = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(cdir, "data")
