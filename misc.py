@@ -63,9 +63,51 @@ def _plot_brain(model='PSD', band='infraslow', alg='ExtraTrees', kernel=None):
     utils.plot_brains(brain, maxval=v, cbar=True, cmap=cmap, figpath=figpath)
 
 
+def _test_colormaps(colormaps=None):
+    model, band, alg, kernel = 'PSD', 'infraslow', 'ExtraTrees', None
+    results_dir = os.path.abspath('./results')
+    feature_dir = utils.find_result(model, band, alg, kernel)
+    feature_file = os.path.join(feature_dir, 'features.xlsx')
+    feature_df = pd.read_excel(feature_file, index_col=0)
+    rois = list(feature_df.index)
+
+    importances = feature_df['Average Importance'].values
+    v = np.max(importances)
+
+    brain = utils.create_custom_roi(rois, importances)
+
+    manuscript_dir = os.path.abspath('./manuscript')
+    cmap_testing_dir = os.path.join(manuscript_dir, 'colormap_tests')
+    if not os.path.isdir(cmap_testing_dir):
+        os.mkdir(cmap_testing_dir)
+    if not colormaps:
+        colormaps = ['jet', 'hot', 'YlGnBu', 'Spectral']
+    for cmap in colormaps:
+        f = os.path.join(cmap_testing_dir, '%s_brain.png' % cmap)
+        utils.plot_brains(brain, maxval=v, cbar=True, cmap=cmap, figpath=f)
+
+
+def _make_pretty_results():
+    results_dir = os.path.abspath('./results')
+    dirlist = os.listdir(results_dir)
+    dirs = [d for d in dirlist if os.path.isdir(os.path.join(results_dir, d))]
+    for d in dirs:
+        dir = os.path.join(results_dir, d)
+        files = os.listdir(dir)
+        if 'permutation_tests.xlsx' not in files:
+            continue
+        else:
+            print(dir)
+            nice_df = utils.nice_perf_df_v1(dir)
+            nice_df.to_excel(os.path.join(dir, 'cleaned_performance_v1.xlsx'))
+
+
 if __name__ == "__main__":
     # psd_rois, algorithm = get_psd_rois()
     # _pretty_pac(rois=psd_rois)
     # _pretty_infraslow_ppc(rois=psd_rois)
     # _pretty_alpha_ppc(rois=psd_rois)
-    _plot_brain(band='alpha')
+    # _plot_brain()
+    # _plot_brain(band='alpha')
+    # _test_colormaps()
+    _make_pretty_results()
