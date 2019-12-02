@@ -131,7 +131,89 @@ def effective_connectivity(start_rois=None):
     return res_dict
 
 
+def _circ_line_corr(ang, line):
+    # Correlate periodic data with linear data
+    n = len(ang)
+    rxs = pearsonr(line, np.sin(ang))
+    rxs = rxs[0]
+    rxc = pearsonr(line, np.cos(ang))
+    rxc = rxc[0]
+    rcs = pearsonr(np.sin(ang), np.cos(ang))
+    rcs = rcs[0]
+    rho = np.sqrt((rxc**2 + rxs**2 - 2*rxc*rxs*rcs)/(1-rcs**2))
+    pval = 1 - chi2.cdf(n*(rho**2), 1)
+    # standard_error = np.sqrt((1-r_2)/(n-2))
+
+    return rho, pval  # ,standard_error
+
+
+def _calc_ppc(band, output_file=None, rois=None):
+    ProjectData = utils.ProjectData
+    data_dir = ProjectData.data_dir
+
+    subjects, sessions = ProjectData.meg_metadata
+
+    phase_amp_data = os.path.join(data_dir, 'MEG_phase_amp_data.hdf5')
+    if output_file is None:
+        output_file = os.path.join(data_dir, 'MEG_phase_phase_coupling.hdf5')
+    if rois is None:
+        rois = ProjectData.glasser_rois  # Not recommended, specify ROIs
+
+    roi_indices, sorted_roi_names = sort_roi_names(rois)
+
+    for sess in sessions:
+        for subj in subjects:
+            print('%s: Running %s %s' % (utils.ctime(), sess, subj))
+
+            ppc_file = h5py.File(output_file, 'a')
+            prog = sess + '/' + subj
+            if prog in ppc_file:
+                continue  # Check if it's been run already
+
+            data_file = h5py.File(phase_amp_data, 'r+')
+            band_key = '%s/phase_data' % band
+            subj_data = data_file[subj][sess][band_key][:, roi_indices]
+
+            ppc = np.ndarray(shape=(len(rois), len(rois)))
+            for r1, roi1 in enumerate(roi_indices):
+                for r2, roi2 in enumerate(roi_indices):
+                    if r1 == r2:
+                        ppc[r1, r2] = 1
+                    elif not r2 > r1:
+                        phase_1 = subj_data[:, r1]
+                        phase_2 = subj_data[:, r2]
+                        rho = circ_corr(phase_1, phase_2)
+                        ppc[r1, r2] = rho
+                    else:
+                        ppc[r1, r2] = 0
+
+            out = ppc_file.require_group(prog)
+            out.create_dataset('ppc', data=ppc, compression='lzf')
+            ppc_file.close()
+            data_file.close()
+            del subj_data
+
+
+def _calc_alpha_ppc():
+    from misc import get_psd_rois
+    psd_rois, _ = get_psd_rois()
+    data_dir = utils.ProjectData.data_dir
+    alpha_ppc = os.path.join(data_dir, 'MEG_alpha_ppc.hdf5')
+    _calc_ppc(band='Alpha', rois=psd_rois, output_file=alpha_ppc)
+
+
+def _calc_infraslow_ppc():
+    from misc import get_psd_rois
+    psd_rois, _ = get_psd_rois()
+    data_dir = utils.ProjectData.data_dir
+    alpha_ppc = os.path.join(data_dir, 'MEG_infraslow_ppc.hdf5')
+    _calc_ppc(band='BOLD bandpass', rois=psd_rois, output_file=alpha_ppc)
+
+
 if __name__ == "__main__":
     res = effective_connectivity(start_rois=['p24pr_L', 'p24pr_R'])
     outpath = os.path.join(data_dir, 'dACC_effective_connectivity.xlsx')
     utils.save_xls(res, outpath)
+
+    # _calc_alpha_ppc()
+    # _calc_infraslow_ppc()
