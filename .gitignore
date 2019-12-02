@@ -128,3 +128,5 @@ dmypy.json
 /data
 /analysis
 *.xlsx
+/results
+/manuscript
