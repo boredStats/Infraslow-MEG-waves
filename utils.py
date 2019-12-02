@@ -320,6 +320,38 @@ def nice_perf_df_v2(result_directory):
     return nice_dict
 
 
+def index_hcp_raw(key, rois=None):
+    data_dir = _get_data_dir()
+    hcp_file = os.path.join(data_dir, 'multimodal_HCP.hdf5')
+
+    if not rois:
+        rois = _get_glasser_rois()
+        indices = None
+    else:
+        indices, _ = sort_roi_names(rois)
+
+    database = h5py.File(hcp_file, 'r+')
+    if indices:
+        dset = database[key][:, indices]
+    else:
+        dset = database[key][...]
+    database.close
+
+    return dset
+
+
+def sort_roi_indices(rois):
+    glasser_rois = _get_glasser_rois()
+    roi_indices = []
+    for r in rois:
+        roi_indices.append(glasser_rois.index(r))
+    roi_indices = sorted(roi_indices)
+    sorted_roi_names = []
+    for r, roi in enumerate(roi_indices):
+        sorted_roi_names.append(glasser_rois[roi])
+    return roi_indices, sorted_roi_names
+
+
 def permutation_p(observed, perm_array):
     """Non-parametric null hypothesis testing.
 
