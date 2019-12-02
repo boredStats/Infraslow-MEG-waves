@@ -248,6 +248,57 @@ def _alpha_ppc_model(
             perm_dict, os.path.join(output_dir, 'permutation_tests.xlsx'))
 
 
+def _dACC_eff_conn_model(
+        alg, kernel, permute=False, seed=None, output_dir=None, rois=None):
+    """Predict DCCS using alpha effective connectivity with dACC."""
+    if not output_dir:
+        output_dir = os.path.abspath(os.path.dirname(__file__))
+    if not rois:
+        rois = glasser_rois
+
+    data_dir = utils.ProjectData.data_dir
+    eff_conn_file = os.path.join(data_dir, 'dACC_effective_connectivity.xlsx')
+    dACC_eff_conn = utils.load_xls(eff_conn_file)
+    session_data = ml_tools._stack_session_data(dACC_eff_conn, return_df=True)
+    connections = list(session_data)
+    latent_vars = ml_tools.plsc(session_data, card_sort_task_data)
+
+    feature_selection_grid = {
+        'C': (.01, 1, 10, 100),
+        "gamma": np.logspace(-2, 2, 5)
+        }
+
+    regression_grid = None
+    if alg == 'SVM':
+        regression_grid = {
+            'C': (.01, 1, 10, 100, 1000),
+            "gamma": (1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
+            }
+
+    ML_pipe = ml_tools.ML_pipeline(
+        predictors=session_data,
+        # predictors=latent_vars,
+        targets=card_sort_task_data,
+        feature_selection_gridsearch=feature_selection_grid,
+        model=alg,
+        model_kernel=kernel,
+        model_gridsearch=regression_grid,
+        feature_names=connections,
+        session_names=meg_sessions,
+        random_state=seed,
+        debug=True)
+
+    if not permute:
+        ML_pipe.run_predictions()
+        ml_tools.save_outputs(ML_pipe, output_dir)
+    else:
+        ML_pipe.debug = False
+        perm_dict = ml_tools.perm_tests(ML_pipe, n_iters=permute)
+        print(perm_dict)
+        utils.save_xls(
+            perm_dict, os.path.join(output_dir, 'permutation_tests.xlsx'))
+
+
 def try_algorithms_on_psd():
     seed = 13  # For reproducibility
     print('Running ML with PSD: %s' % utils.ctime())
@@ -349,6 +400,28 @@ def try_algorithms_on_ppc(rois=None):
                     rois=rois)
 
 
+def try_algorithms_on_eff_conn():
+    seed = 13  # For reproducibility
+    print('Running ML with effective connectivity: %s' % utils.ctime())
+    ml_algorithms = ['ExtraTrees', 'SVM']
+    kernels = ['linear', 'rbf']  # only applies to SVM
+    for m in ml_algorithms:
+        if m == 'ExtraTrees':
+            output_dir = "./results/alpha_dACC_eff_conn_%s" % m
+            if not os.path.isdir(output_dir):
+                os.mkdir(output_dir)
+            _dACC_eff_conn_model(
+                alg=m, kernel=None, seed=seed, output_dir=output_dir)
+
+        elif m == 'SVM':
+            for k in kernels:
+                output_dir = "./results/alpha_dACC_eff_conn_%s_%s" % (m, k)
+                if not os.path.isdir(output_dir):
+                    os.mkdir(output_dir)
+                _dACC_eff_conn_model(
+                    alg=m, kernel=k, seed=seed, output_dir=output_dir)
+
+
 if __name__ == "__main__":
     # try_algorithms_on_psd()
     # infraslow_compare_dict = ml_tools.compare_algorithms(band='infraslow')
@@ -374,20 +447,26 @@ if __name__ == "__main__":
     # utils.save_xls(
     #     compare_dict, './results/infraslow_PPC_model_comparison.xlsx')
 
-    compare_dict = ml_tools.compare_algorithms(band='alpha', model='PPC')
+    # compare_dict = ml_tools.compare_algorithms(band='alpha', model='PPC')
+    # utils.save_xls(
+    #     compare_dict, './results/alpha_PPC_model_comparison.xlsx')
+    # _, algorithm, dir = ml_tools.pick_algorithm(
+    #     compare_dict, band='alpha', model='PPC', return_directory=True)
+    # str_check = algorithm.split(' ')
+    # if len(str_check) > 1:
+    #     alg, kernel = str_check[0], str_check[1]
+    # else:
+    #     alg, kernel = algorithm, None
+    # _alpha_ppc_model(
+    #     alg=alg,
+    #     kernel=kernel,
+    #     permute=1000,
+    #     seed=13,
+    #     output_dir=dir,
+    #     rois=psd_rois)
+
+    # try_algorithms_on_eff_conn()
+    compare_dict = ml_tools.compare_algorithms(
+        band='alpha', model='dACC_eff_conn')
     utils.save_xls(
-        compare_dict, './results/alpha_PPC_model_comparison.xlsx')
-    _, algorithm, dir = ml_tools.pick_algorithm(
-        compare_dict, band='alpha', model='PPC', return_directory=True)
-    str_check = algorithm.split(' ')
-    if len(str_check) > 1:
-        alg, kernel = str_check[0], str_check[1]
-    else:
-        alg, kernel = algorithm, None
-    _alpha_ppc_model(
-        alg=alg,
-        kernel=kernel,
-        permute=1000,
-        seed=13,
-        output_dir=dir,
-        rois=psd_rois)
+        compare_dict, './results/alpha_dACC_eff_conn_model_comparison.xlsx')
